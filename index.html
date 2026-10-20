@@ -1,0 +1,995 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>sample loader · for volca sample 2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;600;700&family=Archivo:wght@500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root{
+  --room:#c9cbca; --body:#ffffff; --body-2:#f7f7f6; --edge:#d6d7d5; --section:#d9dad8; --section-ink:#1c1d1f;
+  --strip:#eeefed; --key:#55585c; --key-2:#3f4246; --ink:#1c1d1f; --dim:#5f6366; --line:#b9bbb8;
+  --red:#e8402a; --red-2:#c5301d; --knob:#f2694c; --knob-2:#d84a2e; --black-knob:#252628;
+  --btn:#fbfbf9; --led-bg:#170d0c; --led:#ff3b1f; --focus:#2f6fd6;
+  color-scheme: light;
+}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+html,body{height:100%}
+body{margin:0;background:radial-gradient(120% 90% at 50% 0%,color-mix(in srgb,var(--room) 70%,white),var(--room));color:var(--ink);font:500 14px/1.25 "Archivo Narrow","Arial Narrow",Arial,sans-serif;display:flex;align-items:center;justify-content:center;padding:clamp(6px,1.4vw,22px);overflow:hidden}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.lbl{font:700 11px/1 "Archivo Narrow",Arial,sans-serif;text-transform:uppercase;letter-spacing:.05em;color:var(--section-ink)}
+
+/* ===== device body ===== */
+.device{position:relative;width:min(100%,1480px);height:100%;background:linear-gradient(180deg,var(--body),var(--body-2));border-radius:16px;box-shadow:0 1px 0 rgba(255,255,255,.7) inset,0 -2px 0 rgba(0,0,0,.08) inset,0 24px 50px rgba(0,0,0,.28),0 2px 4px rgba(0,0,0,.15);border:1px solid var(--edge);overflow:hidden}
+.zoom{display:flex;flex-direction:column;height:100%;padding:16px 22px 18px}
+.screw{position:absolute;width:13px;height:13px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff,#a9aba8 60%,#7d7f7c);box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
+.screw::after{content:"";position:absolute;left:2px;right:2px;top:5.5px;height:2px;background:#6c6e6b;transform:rotate(35deg)}
+.s1{left:9px;top:9px}.s2{right:9px;top:9px}.s3{left:9px;bottom:9px}.s4{right:9px;bottom:9px}
+
+/* top row */
+.top{display:grid;grid-template-columns:auto 1fr auto;gap:12px 26px;align-items:center;padding:2px 10px 14px}
+.brand .name{font:700 30px/0.95 "Archivo",Arial,sans-serif;color:var(--red);letter-spacing:-.01em}
+.brand .sub{font:600 11px/1.2 "Archivo Narrow",Arial,sans-serif;color:var(--red);text-transform:uppercase;letter-spacing:.06em;margin-top:3px}
+.conn{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:center}
+.jack{display:flex;flex-direction:column;align-items:center;gap:4px}
+.jack select{max-width:170px}
+.hole{width:26px;height:26px;border-radius:50%;background:radial-gradient(circle,#0e0e0f 0 40%,#2d2e30 42% 62%,#9c9e9b 64%);box-shadow:0 1px 0 rgba(255,255,255,.7)}
+.disp{display:flex;align-items:center;gap:10px}
+.led{background:var(--led-bg);border-radius:4px;padding:6px 12px 4px;font:40px/1 "Share Tech Mono",monospace;color:var(--led);text-shadow:0 0 6px rgba(255,59,31,.75),0 0 1px #ff9b84;letter-spacing:.12em;min-width:5.4ch;text-align:right;box-shadow:inset 0 2px 6px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.6);white-space:pre}
+.msg{width:220px;font:600 12px/1.25 "Archivo Narrow",Arial,sans-serif;text-transform:uppercase;letter-spacing:.04em;color:var(--dim);min-height:3.75em}
+.msg b{display:block;color:var(--ink)}
+
+/* middle */
+.mid{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px}
+.work{background:var(--section);border-radius:6px;padding:12px 14px;min-height:0;display:flex;flex-direction:column;box-shadow:inset 0 1px 2px rgba(0,0,0,.12)}
+.panel{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px}
+.panel[hidden]{display:none}
+.func{position:relative;background:var(--section);border-radius:6px;padding:12px;display:flex;flex-direction:column;gap:12px;box-shadow:inset 0 1px 2px rgba(0,0,0,.12)}
+.fgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 10px}
+.fbtn{display:flex;flex-direction:column;align-items:center;gap:5px;border:0;background:none;padding:0;cursor:pointer}
+.fbtn .cap{font:700 10px/1 "Archivo Narrow",Arial,sans-serif;text-transform:uppercase;letter-spacing:.05em;color:var(--section-ink);white-space:nowrap}
+.fbtn .key{width:100%;height:32px;border-radius:4px;background:linear-gradient(180deg,var(--btn),color-mix(in srgb,var(--btn) 88%,#000));box-shadow:0 2px 0 rgba(0,0,0,.22),0 3px 4px rgba(0,0,0,.18);transition:transform .05s,box-shadow .05s}
+.fbtn:active .key,.fbtn[aria-selected="true"] .key,.fbtn[aria-pressed="true"] .key{transform:translateY(2px);box-shadow:0 0 0 rgba(0,0,0,.2),0 1px 1px rgba(0,0,0,.2)}
+.fbtn[aria-selected="true"] .key{background:linear-gradient(180deg,#ff7a63,var(--red));box-shadow:0 0 10px rgba(232,64,42,.55),0 1px 1px rgba(0,0,0,.2)}
+.fbtn.redk .key{background:linear-gradient(180deg,#f2654f,var(--red-2))}
+.fbtn.redk[aria-pressed="true"] .key{background:linear-gradient(180deg,#ff8a74,#ff3b1f);box-shadow:0 0 14px rgba(255,59,31,.8)}
+.fbtn:disabled{opacity:.45;cursor:not-allowed}
+.fhelp{font-size:12px;color:var(--dim);line-height:1.3}
+.sep{height:1px;background:var(--line)}
+.knobrow{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:flex-start}
+
+/* knob */
+.knob{display:flex;flex-direction:column;align-items:center;gap:5px;width:64px;user-select:none;touch-action:none}
+.knob .cap{font:700 10px/1 "Archivo Narrow",Arial,sans-serif;text-transform:uppercase;letter-spacing:.05em;color:var(--section-ink);text-align:center;white-space:nowrap}
+.knob .dial{width:40px;height:40px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffb6a3 0,var(--knob) 38%,var(--knob-2) 100%);box-shadow:0 3px 5px rgba(0,0,0,.3),0 0 0 3px rgba(0,0,0,.06);position:relative;cursor:ns-resize}
+.knob.black .dial{background:radial-gradient(circle at 35% 30%,#6b6d70 0,var(--black-knob) 45%,#0d0d0e 100%)}
+.knob .dial::after{content:"";position:absolute;left:50%;top:4px;width:3px;height:12px;margin-left:-1.5px;border-radius:2px;background:rgba(255,255,255,.95)}
+.knob .dial[data-rot]{transform:rotate(var(--rot,0deg))}
+.knob .val{font:12px/1 "Share Tech Mono",monospace;color:var(--dim)}
+
+/* controls */
+.row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.btn{border:0;background:linear-gradient(180deg,var(--btn),color-mix(in srgb,var(--btn) 90%,#000));padding:6px 12px;border-radius:4px;cursor:pointer;font:700 12px/1 "Archivo Narrow",Arial,sans-serif;text-transform:uppercase;letter-spacing:.05em;color:var(--ink);box-shadow:0 2px 0 rgba(0,0,0,.2),0 2px 3px rgba(0,0,0,.15);min-height:30px}
+.btn:active{transform:translateY(2px);box-shadow:none}
+.btn.red{background:linear-gradient(180deg,#f2654f,var(--red-2));color:#fff}
+.btn.dark{background:linear-gradient(180deg,#4a4d51,#2b2d30);color:#f3f3f3}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+select,input[type=text],input[type=number]{border:1px solid var(--line);background:var(--body);border-radius:3px;padding:4px 6px;min-height:28px;color:var(--ink)}
+label.f{display:flex;flex-direction:column;gap:4px}
+.tog{display:inline-flex;align-items:center;gap:7px;border:0;background:none;cursor:pointer;padding:2px 4px 2px 0;font:700 11px/1 "Archivo Narrow",Arial,sans-serif;text-transform:uppercase;letter-spacing:.05em;color:var(--section-ink)}
+.tog i{width:9px;height:9px;border-radius:50%;background:#7a1a10;box-shadow:inset 0 1px 1px rgba(0,0,0,.5)}
+.tog[aria-pressed="true"] i{background:#ff3b1f;box-shadow:0 0 6px #ff3b1f}
+.note{font-size:13px;color:var(--dim);line-height:1.35;max-width:80ch;margin:0}
+.note b{color:var(--ink)}
+
+/* waveform */
+.wave{position:relative;flex:1;min-height:120px;background:var(--led-bg);border-radius:4px;overflow:hidden;box-shadow:inset 0 2px 6px rgba(0,0,0,.7);cursor:crosshair;touch-action:none}
+.wave canvas{position:absolute;inset:0;width:100%;height:100%}
+.wave .empty{position:absolute;inset:0;display:grid;place-items:center;color:#a4605a;font:600 13px/1.4 "Archivo Narrow",Arial,sans-serif;text-transform:uppercase;letter-spacing:.06em;text-align:center;padding:12px;pointer-events:none}
+.wave .empty[hidden]{display:none}
+.wave.drag{outline:2px dashed #ff3b1f;outline-offset:-4px}
+.meter{height:6px;background:#2b1310;border-radius:3px;overflow:hidden;width:120px}
+.meter i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ff7a40,#ff3b1f 80%,#fff 100%)}
+.stats{font:13px/1.3 "Share Tech Mono",monospace;color:var(--dim)}
+.stats b{color:var(--ink);font-weight:400}
+
+/* library */
+.memory{display:flex;align-items:center;gap:10px}
+.membar{flex:1;height:10px;background:var(--body);border-radius:5px;overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.25)}
+.membar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--knob),var(--red))}
+.slots{flex:1;min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:4px;align-content:start;padding:2px}
+.slot{display:flex;align-items:baseline;gap:6px;text-align:left;border:0;border-radius:3px;background:var(--body);padding:5px 7px;cursor:pointer;min-height:28px;box-shadow:0 1px 0 rgba(0,0,0,.12);overflow:hidden;white-space:nowrap}
+.slot .no{font:12px/1 "Share Tech Mono",monospace;color:var(--dim)}
+.slot .nm{flex:1;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.slot .ln{font:11px/1 "Share Tech Mono",monospace;color:var(--dim)}
+.slot.empty .nm{color:var(--dim);font-weight:500}
+.slot.sel{outline:2px solid var(--red);outline-offset:-2px}
+.slot.target::before{content:"";width:7px;height:7px;border-radius:50%;background:#ff3b1f;box-shadow:0 0 5px #ff3b1f;align-self:center}
+.drop{border:2px dashed var(--line);border-radius:6px;padding:16px;text-align:center;color:var(--dim)}
+.drop.over{border-color:var(--red);color:var(--ink)}
+pre.log{flex:1;min-height:80px;overflow:auto;background:var(--body);border-radius:4px;padding:8px;margin:0;font:12px/1.35 "Share Tech Mono",monospace;color:var(--dim);box-shadow:inset 0 1px 2px rgba(0,0,0,.2)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.box{background:color-mix(in srgb,var(--section) 70%,var(--body));border-radius:5px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.box h3{margin:0;font:700 12px/1 "Archivo Narrow",Arial,sans-serif;text-transform:uppercase;letter-spacing:.06em}
+
+/* key strip */
+.strip{margin-top:14px;background:var(--strip);border-radius:6px;padding:10px 12px 8px;box-shadow:inset 0 1px 2px rgba(0,0,0,.12)}
+.keys{display:grid;grid-template-columns:repeat(16,1fr);gap:8px}
+.pk{display:flex;flex-direction:column;align-items:center;gap:6px;border:0;background:none;padding:0;cursor:pointer;touch-action:none}
+.pk .l{width:7px;height:7px;border-radius:50%;background:#7a1a10;box-shadow:inset 0 1px 1px rgba(0,0,0,.5)}
+.pk .k{width:100%;height:clamp(42px,7vh,64px);border-radius:2px;background:linear-gradient(180deg,color-mix(in srgb,var(--section) 86%,#000) 0,var(--section) 24%,var(--section) 100%);box-shadow:inset 0 2px 3px rgba(0,0,0,.28),inset 0 -1px 0 rgba(255,255,255,.55),0 1px 0 rgba(255,255,255,.95),0 -1px 0 rgba(0,0,0,.08);display:flex;align-items:flex-start;justify-content:center;padding-top:7px;color:var(--section-ink);font:700 11px/1.15 "Archivo Narrow",Arial,sans-serif;text-transform:uppercase;text-align:center;letter-spacing:.04em;transition:background .05s}
+.pk:hover .k{background:linear-gradient(180deg,color-mix(in srgb,var(--section) 84%,#000) 0,color-mix(in srgb,var(--section) 96%,#000) 24%,color-mix(in srgb,var(--section) 96%,#000) 100%)}
+.pk.down .k{background:linear-gradient(180deg,color-mix(in srgb,var(--section) 72%,#000) 0,color-mix(in srgb,var(--section) 88%,#000) 30%,color-mix(in srgb,var(--section) 90%,#000) 100%);box-shadow:inset 0 3px 5px rgba(0,0,0,.4),0 1px 0 rgba(255,255,255,.95)}
+.pk.down .l,.pk.on .l{background:#ff3b1f;box-shadow:0 0 6px #ff3b1f}
+.pk .cap{font:700 10px/1 "Archivo Narrow",Arial,sans-serif;text-transform:uppercase;letter-spacing:.04em;color:var(--section-ink);white-space:nowrap}
+.strip .legend{display:grid;grid-template-columns:10fr 6fr;gap:8px;margin-top:6px;font:700 10px/1 "Archivo Narrow",Arial,sans-serif;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);text-align:center}
+.strip .legend span{border-top:1px solid var(--line);padding-top:5px}
+
+/* busy overlay: LED chase */
+.busy{position:absolute;inset:0;z-index:10;display:grid;place-items:center;background:color-mix(in srgb,var(--body) 55%,transparent);backdrop-filter:blur(2px);cursor:progress}
+.busy[hidden]{display:none}
+.bcard{background:var(--led-bg);color:#fff;border-radius:6px;padding:20px 30px 18px;min-width:min(440px,86%);max-width:90%;text-align:center;box-shadow:0 18px 40px rgba(0,0,0,.4);cursor:default}
+.bcard .t{font:600 22px/1.2 "Archivo Narrow",Arial,sans-serif;text-transform:uppercase;letter-spacing:.06em}
+.bcard .s{font:14px/1.3 "Share Tech Mono",monospace;color:#c9867c;margin-top:6px;min-height:1.3em}
+.chase{display:flex;justify-content:center;gap:9px;margin-top:16px}
+.chase i{width:9px;height:9px;border-radius:50%;background:#4a1810}
+.chase i.on{background:#ff3b1f;box-shadow:0 0 8px #ff3b1f}
+.chase i.half{background:#a8281a}
+.bcard .x{margin-top:14px}
+
+/* Ko-fi sticker */
+.sticker{position:absolute;right:18px;bottom:20px;z-index:3;display:flex;align-items:center;gap:7px;padding:5px 12px 5px 8px;background:#fffdf6;color:#2a2a2e;text-decoration:none;transform:rotate(4deg);border-radius:3px;box-shadow:0 1px 1px rgba(0,0,0,.2),0 3px 7px rgba(0,0,0,.2);transition:transform .15s}
+.sticker::before{content:"";position:absolute;inset:3px;border:1.5px dashed var(--red);border-radius:2px;pointer-events:none}
+.sticker::after{content:"";position:absolute;right:0;top:0;width:11px;height:11px;background:linear-gradient(225deg,var(--body-2) 0 48%,#e6e0cf 50%,#f6f1e4 100%);border-radius:0 3px 0 0}
+.sticker svg{width:24px;height:20px}
+.sticker .cup{fill:var(--red)}.sticker .handle{fill:none;stroke:var(--red);stroke-width:3}.sticker .steam{fill:none;stroke:#d99a8d;stroke-width:1.6;stroke-linecap:round}.sticker .heart{fill:#fff}
+.sticker span{display:flex;flex-direction:column;line-height:1}
+.sticker b{font:700 13px/1 "Archivo Narrow",Arial,sans-serif;text-transform:uppercase;letter-spacing:.04em}
+.sticker small{font:600 10px/1.2 "Archivo Narrow",Arial,sans-serif;color:var(--red);text-transform:uppercase;letter-spacing:.08em}
+.sticker:hover{transform:rotate(1.5deg) translateY(-1px)}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--body);padding:8px 14px;border-radius:4px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:30;max-width:90vw;font-weight:600}
+.toast.show{opacity:1}
+
+@media (max-width:900px){
+  body{overflow:auto;display:block;padding:8px}
+  .device{height:auto;min-height:100%}
+  .zoom{height:auto;padding:16px 14px}
+  .top{grid-template-columns:1fr;justify-items:start}
+  .conn{justify-content:flex-start}
+  .mid{grid-template-columns:1fr}
+  .work{min-height:70vh}
+  .keys{grid-template-columns:repeat(8,1fr)}
+  .strip .legend{display:none}
+  .sticker{position:relative;right:auto;bottom:auto;align-self:flex-start;margin:4px 0 0 6px}
+  .msg{width:auto;max-width:60vw}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main class="device" id="device">
+  <i class="screw s1"></i><i class="screw s2"></i><i class="screw s3"></i><i class="screw s4"></i>
+  <div class="zoom" id="zoom">
+    <header class="top">
+      <div class="brand"><div class="name">sample loader</div><div class="sub">USB sample manager · for volca sample 2</div></div>
+      <div class="conn">
+        <div class="jack"><span class="hole"></span><span class="lbl">MIDI out</span><select id="outSel" aria-label="MIDI output"><option value="">—</option></select></div>
+        <div class="jack"><span class="hole"></span><span class="lbl">MIDI in</span><select id="inSel" aria-label="MIDI input"><option value="">—</option></select></div>
+        <button class="btn dark" id="connect">Connect</button>
+      </div>
+      <div class="disp"><div class="led" id="led" aria-hidden="true"> ---</div><div class="msg" id="msg" aria-live="polite"><b>Not connected</b>Plug the volca in by USB and press Connect</div></div>
+    </header>
+
+    <div class="mid">
+      <section class="work" aria-label="Workspace">
+        <div class="panel" id="p-sample">
+          <div class="row">
+            <label class="f"><span class="lbl">Input</span><select id="inDev" aria-label="Audio input"><option value="">Default input</option></select></label>
+            <div class="f" style="display:flex;flex-direction:column;gap:4px"><span class="lbl">Level</span><div class="meter"><i id="meter"></i></div></div>
+            <button class="btn red" id="recBtn">● Record</button>
+            <button class="btn" id="openBtn">Open audio file</button>
+            <input type="file" id="file" accept="audio/*,.wav,.mp3,.ogg,.flac,.aif,.aiff,.m4a" hidden>
+            <label class="f" style="margin-left:auto"><span class="lbl">Name</span><input type="text" id="sName" maxlength="24" spellcheck="false" placeholder="sample name" style="width:180px"></label>
+          </div>
+          <div class="wave" id="wave"><canvas id="cv"></canvas><div class="empty" id="waveEmpty">Record, open a file or drop audio here<br>Drag on the waveform to choose the part to keep</div></div>
+          <div class="row" style="justify-content:space-between">
+            <div class="knobrow" id="knobs"></div>
+            <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start">
+              <button class="tog" id="tNorm" aria-pressed="true"><i></i>Normalise</button>
+              <button class="tog" id="tRev" aria-pressed="false"><i></i>Reverse</button>
+              <label class="f"><span class="lbl">Stereo to mono</span><select id="monoSel"><option value="mid">Mix L+R</option><option value="left">Left</option><option value="right">Right</option></select></label>
+              <button class="btn" id="trimBtn" title="Cut silence at the start and end of the selection">Auto trim</button>
+            </div>
+          </div>
+          <div class="row" style="justify-content:space-between">
+            <div class="stats" id="stats">No sample yet</div>
+            <div class="row">
+              <label class="f"><span class="lbl">Send to slot</span><select id="slotSel" aria-label="Target slot"></select></label>
+              <button class="btn" id="saveWav">Save WAV</button>
+              <button class="btn red" id="sendBtn">Send to volca</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" id="p-library" hidden>
+          <div class="row" style="justify-content:space-between">
+            <div class="memory" style="flex:1;min-width:240px"><span class="lbl">Memory</span><div class="membar"><i id="memBar"></i></div><span class="stats" id="memTxt">—</span></div>
+            <button class="btn dark" id="readBtn">Read slots</button>
+          </div>
+          <div class="row" id="slotActions">
+            <span class="stats" id="selInfo">Select a slot</span>
+            <button class="btn" id="aPlay">Listen</button>
+            <button class="btn" id="aEdit">Edit</button>
+            <button class="btn" id="aWav">Save WAV</button>
+            <button class="btn" id="aTarget">Send next sample here</button>
+            <button class="btn red" id="aDel">Delete</button>
+          </div>
+          <div class="slots" id="slots"></div>
+        </div>
+
+        <div class="panel" id="p-backup" hidden>
+          <div class="cols">
+            <div class="box"><h3>Back up the volca</h3><p class="note">Downloads every sample with its name and slot into one .zip file. Do this before you start changing things.</p><div class="row"><button class="btn dark" id="bkAll">Back up all samples</button></div></div>
+            <div class="box"><h3>Restore a backup</h3><p class="note">Puts every sample from a backup .zip back in its original slot. Slots that are not in the backup are left as they are, unless you tick the box below.</p><label class="row"><input type="checkbox" id="rsClean"> <span class="note">Erase other slots first to free memory</span></label><div class="row"><button class="btn" id="rsBtn">Open backup .zip</button><input type="file" id="rsFile" accept=".zip" hidden></div></div>
+            <div class="box"><h3>Load many files</h3><p class="note">Drop audio files to send them into the next free slots, converted to mono 31.25 kHz with the Normalise and Stereo-to-mono settings from the Sample page.</p><div class="drop" id="bulkDrop">Drop files here or <button class="btn" id="bulkBtn">choose files</button></div><input type="file" id="bulkFile" accept="audio/*" multiple hidden></div>
+          </div>
+          <pre class="log" id="bkLog" aria-live="polite"></pre>
+        </div>
+
+        <div class="panel" id="p-setup" hidden>
+          <div class="cols">
+            <div class="box"><h3>Connecting</h3><p class="note">Use <b>Chrome</b> or <b>Edge</b> on a computer (or Chrome on Android with a USB OTG cable) and allow MIDI with SysEx when asked. Connect the volca sample 2 with its micro-USB cable and press <b>Connect</b>. Safari and iPhone/iPad don't support Web MIDI.</p></div>
+            <div class="box"><h3>Pads</h3><p class="note">Pads 1–10 play the volca's parts over MIDI so you can hear a sample after sending it. Part 1 listens on the channel below, part 2 on the next, and so on.</p><label class="f"><span class="lbl">Part 1 MIDI channel</span><select id="partCh"></select></label></div>
+            <div class="box"><h3>Good to know</h3><p class="note">Samples are stored as 16-bit mono at 31.25 kHz, the volca's own format. If the volca stops responding during a long transfer, switch it off and on: its memory stays intact. Long samples take a few seconds to travel over USB.</p></div>
+          </div>
+          <pre class="log" id="midiLog" aria-label="MIDI log"></pre>
+        </div>
+      </section>
+
+      <aside class="func" aria-label="Functions">
+        <div class="fgrid" role="tablist" aria-label="Pages">
+          <button class="fbtn" role="tab" data-tab="sample" aria-selected="true"><span class="cap">Sample</span><span class="key"></span></button>
+          <button class="fbtn" role="tab" data-tab="library" aria-selected="false"><span class="cap">Library</span><span class="key"></span></button>
+          <button class="fbtn" role="tab" data-tab="backup" aria-selected="false"><span class="cap">Backup</span><span class="key"></span></button>
+          <button class="fbtn" role="tab" data-tab="setup" aria-selected="false"><span class="cap">Setup</span><span class="key"></span></button>
+        </div>
+        <div class="sep"></div>
+        <div class="fgrid">
+          <button class="fbtn" id="fPlay"><span class="cap">▶ Preview</span><span class="key"></span></button>
+          <button class="fbtn" id="fStop"><span class="cap">■ Stop</span><span class="key"></span></button>
+          <button class="fbtn redk" id="fRec" aria-pressed="false"><span class="cap">● Rec</span><span class="key"></span></button>
+          <button class="fbtn redk" id="fSend"><span class="cap">Send</span><span class="key"></span></button>
+        </div>
+        <div class="sep"></div>
+        <div class="knobrow" style="justify-content:space-around" id="fknobs"></div>
+        <a class="sticker" href="https://ko-fi.com/dferreiramarques" target="_blank" rel="noopener" aria-label="Support this tool on Ko-fi (opens in a new tab)">
+    <svg viewBox="0 0 40 34" aria-hidden="true"><path class="steam" d="M13 2c-2 3 2 4 0 7M19 1c-2 3 2 4 0 7M25 2c-2 3 2 4 0 7"/><path class="cup" d="M5 12h26v10a9 9 0 0 1-9 9h-8a9 9 0 0 1-9-9z"/><path class="handle" d="M31 15h2a5 5 0 0 1 0 10h-2.5"/><path class="heart" d="M18 26c-4-2.6-6-4.6-6-7a3 3 0 0 1 6-1 3 3 0 0 1 6 1c0 2.4-2 4.4-6 7z"/></svg>
+    <span><b>Buy me a coffee</b><small>ko-fi</small></span>
+  </a>
+        <p class="fhelp" id="fhelp">Preview plays the sample as it will sound on the volca: mono, 31.25 kHz, with your settings.</p>
+      </aside>
+    </div>
+
+    <footer class="strip" aria-label="Pads and transport">
+      <div class="keys" id="keys"></div>
+      <div class="legend"><span>Parts — play on the volca</span><span>Sample</span></div>
+    </footer>
+  </div>
+  <div class="busy" id="busy" hidden><div class="bcard" role="status" aria-live="assertive"><div class="t" id="bT"></div><div class="s" id="bS"></div><div class="chase" id="chase"></div><button class="btn x" id="bX" hidden>Cancel</button></div></div>
+</main>
+<div class="toast" id="toast" role="status"></div>
+<script>
+/* ===== volca sample 2 — USB SysEx protocol =====
+   Protocol knowledge from the open-source volsa2 project (MIT, github.com/00nktk/volsa2),
+   reimplemented in JavaScript for Web MIDI. */
+const EOX = 0xF7, KORG = 0x42;
+const VS2_MODEL = [0x2D, 0x01, 0x08, 0x00];
+const VS2_RATE = 31250;
+const NAME_LEN = 24, DEFAULT_LEVEL = 65535, DEFAULT_SPEED = 16384;
+const STATUS = { 0x23: 'ok', 0x24: 'busy', 0x25: 'memory full', 0x26: 'invalid data format' };
+
+/* 8-bit data <-> Korg 7-bit packing: every 7 bytes become 8, the first holding the high bits */
+function pack7(bytes) {
+  const out = [];
+  for (let i = 0; i < bytes.length; i += 7) {
+    const n = Math.min(7, bytes.length - i); let msb = 0;
+    for (let j = 0; j < n; j++) msb |= ((bytes[i + j] >> 7) & 1) << j;
+    out.push(msb);
+    for (let j = 0; j < n; j++) out.push(bytes[i + j] & 0x7F);
+  }
+  return out;
+}
+function unpack7(data) {
+  const out = [];
+  for (let i = 0; i < data.length; i += 8) {
+    const n = Math.min(8, data.length - i), msb = data[i];
+    for (let j = 1; j < n; j++) out.push(data[i + j] | (((msb >> (j - 1)) & 1) << 7));
+  }
+  return out;
+}
+const slotBytes = n => [n & 0x7F, (n >> 7) & 1];
+const readSlot = (lo, hi) => (lo & 0x7F) | ((hi & 1) << 7);
+const hdr = ch => [0xF0, KORG, 0x30 | (ch & 0x0F), 0x00, 0x01, 0x2D];
+
+/* outgoing */
+const searchRequest = (echo = 42) => [0xF0, KORG, 0x50, 0x00, echo & 0x7F, EOX];
+const spaceRequest = ch => [...hdr(ch), 0x1B, EOX];
+const headerRequest = (ch, slot) => [...hdr(ch), 0x1E, ...slotBytes(slot), EOX];
+const dataRequest = (ch, slot) => [...hdr(ch), 0x1F, ...slotBytes(slot), EOX];
+function headerMessage(ch, slot, { name = '', length = 0, level = DEFAULT_LEVEL, speed = DEFAULT_SPEED }) {
+  const raw = new Array(32).fill(0);
+  const nm = asciiName(name);
+  for (let i = 0; i < nm.length; i++) raw[i] = nm.charCodeAt(i);
+  raw[24] = length & 0xFF; raw[25] = (length >>> 8) & 0xFF; raw[26] = (length >>> 16) & 0xFF; raw[27] = (length >>> 24) & 0xFF;
+  raw[28] = level & 0xFF; raw[29] = (level >> 8) & 0xFF;
+  raw[30] = speed & 0xFF; raw[31] = (speed >> 8) & 0xFF;
+  return [...hdr(ch), 0x4E, ...slotBytes(slot), ...pack7(raw), EOX];
+}
+const emptyHeaderMessage = (ch, slot) => headerMessage(ch, slot, { name: '', length: 0, level: 0, speed: 0 });
+function dataMessage(ch, slot, pcm /* Int16Array */) {
+  const bytes = new Array(pcm.length * 2);
+  for (let i = 0; i < pcm.length; i++) { const v = pcm[i] & 0xFFFF; bytes[2 * i] = v & 0xFF; bytes[2 * i + 1] = v >> 8; }
+  const packed = pack7(bytes);
+  const m = new Uint8Array(6 + 1 + 2 + packed.length + 1);
+  m.set(hdr(ch), 0); m[6] = 0x4F; m.set(slotBytes(slot), 7); m.set(packed, 9); m[m.length - 1] = EOX;
+  return m;
+}
+function asciiName(s) { return String(s).normalize('NFKD').replace(/[^\x20-\x7E]/g, '').slice(0, NAME_LEN); }
+
+/* incoming */
+const isExt = m => m.length >= 8 && m[0] === 0xF0 && m[1] === KORG && (m[2] & 0xF0) === 0x30 && m[3] === 0 && m[4] === 1 && m[5] === 0x2D;
+function parseSearchReply(m) {
+  if (m.length !== 15 || m[0] !== 0xF0 || m[1] !== KORG || m[2] !== 0x50 || m[3] !== 0x01) return null;
+  const model = Array.from(m.slice(6, 10));
+  if (model.join() !== VS2_MODEL.join()) return null;
+  return { channel: m[4], echo: m[5], version: `${m[12] | (m[13] << 8)}.${m[10] | (m[11] << 8)}` };
+}
+function classify(m) {
+  if (parseSearchReply(m)) return 'search';
+  if (!isExt(m)) return null;
+  if (m.length === 8) return 'status';
+  return ({ 0x4B: 'space', 0x4E: 'header', 0x4F: 'data' })[m[6]] || null;
+}
+const parseStatus = m => ({ code: m[6], ok: m[6] === 0x23, text: STATUS[m[6]] || 'unknown reply 0x' + m[6].toString(16) });
+function parseSpace(m) { const used = m[7] | (m[8] << 7), all = m[9] | (m[10] << 7); return { used, all, ratio: all ? used / all : 0 }; }
+function parseHeader(m) {
+  const slot = readSlot(m[7], m[8]);
+  const raw = unpack7(Array.from(m.slice(9, m.length - 1)));
+  let name = ''; for (let i = 0; i < NAME_LEN && raw[i]; i++) name += String.fromCharCode(raw[i]);
+  const length = (raw[24] | (raw[25] << 8) | (raw[26] << 16) | (raw[27] << 24)) >>> 0;
+  const level = raw[28] | (raw[29] << 8), speed = raw[30] | (raw[31] << 8);
+  return { slot, name, length, level, speed, empty: !name && !length && !level && !speed };
+}
+function parseData(m) {
+  const slot = readSlot(m[7], m[8]);
+  const raw = unpack7(Array.from(m.slice(9, m.length - 1)));
+  const pcm = new Int16Array(raw.length >> 1);
+  for (let i = 0; i < pcm.length; i++) { const v = raw[2 * i] | (raw[2 * i + 1] << 8); pcm[i] = v > 32767 ? v - 65536 : v; }
+  return { slot, pcm };
+}
+
+if (typeof module !== 'undefined') module.exports = { pack7, unpack7, headerMessage, emptyHeaderMessage, dataMessage, parseData, parseHeader, parseSearchReply, classify, searchRequest, spaceRequest, headerRequest, dataRequest, parseSpace, parseStatus };
+
+</script>
+<script>
+/* ===== sample loader · app ===== */
+const $ = s => document.querySelector(s);
+function el(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  if (attrs) for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'class') e.className = v;
+    else if (k.startsWith('on') && typeof v === 'function') e.addEventListener(k.slice(2), v);
+    else if (v !== false && v != null) e.setAttribute(k, v);
+  }
+  for (const c of kids.flat()) if (c != null) e.append(c instanceof Node ? c : document.createTextNode(c));
+  return e;
+}
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const pad3 = n => String(n).padStart(3, '0');
+const fmtS = n => (n / VS2_RATE).toFixed(2) + ' s';
+let toastT = 0;
+function toast(t) { const e = $('#toast'); e.textContent = t; e.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => e.classList.remove('show'), 2800); }
+function led(t) { $('#led').textContent = String(t).slice(0, 5).padStart(4, ' '); }
+function msg(title, sub = '') { $('#msg').innerHTML = ''; $('#msg').append(el('b', {}, title), sub); }
+
+/* ---------- settings ---------- */
+const cfg = { partCh: 0, norm: true, rev: false, mono: 'mid', gain: 0, pitch: 0, hicut: 15625, fin: 0, fout: 10, vol: 0.8 };
+const slots = new Array(200).fill(null);   // headers read from the volca
+let target = 0, selSlot = -1, space = null;
+function saveCfg() { try { localStorage.setItem('volca-loader', JSON.stringify({ cfg, inName: inPort?.name, outName: outPort?.name })); } catch (e) {} }
+function loadCfg() { try { const s = JSON.parse(localStorage.getItem('volca-loader') || 'null'); if (s) { Object.assign(cfg, s.cfg || {}); return s; } } catch (e) {} return null; }
+
+/* ---------- busy overlay (LED chase), at least 2 s ---------- */
+let busyId = 0, chaseT = 0;
+function chase(id) {
+  if (id !== busyId) return;
+  const dots = [...document.querySelectorAll('#chase i')], n = dots.length, t = Math.floor(performance.now() / 70) % (2 * n - 2), p = t < n ? t : 2 * n - 2 - t;
+  dots.forEach((d, i) => { d.className = i === p ? 'on' : Math.abs(i - p) === 1 ? 'half' : ''; });
+  chaseT = setTimeout(() => chase(id), matchMedia('(prefers-reduced-motion: reduce)').matches ? 500 : 70);
+}
+function busy(title, opts = {}) {
+  const id = ++busyId, t0 = performance.now(), mine = () => id === busyId;
+  $('#bT').textContent = title; $('#bS').textContent = opts.sub || '';
+  const x = $('#bX'); x.hidden = !opts.cancel; x.onclick = opts.cancel || null;
+  $('#busy').hidden = false; clearTimeout(chaseT); chase(id);
+  return {
+    sub(s) { if (mine()) $('#bS').textContent = s; },
+    title(s) { if (mine()) $('#bT').textContent = s; },
+    async done(final) {
+      const rest = 2000 - (performance.now() - t0); if (rest > 0) await sleep(rest);
+      if (!mine()) return;
+      if (final) { $('#bT').textContent = final; $('#bS').textContent = ''; $('#bX').hidden = true; await sleep(600); }
+      if (!mine()) return;
+      $('#busy').hidden = true; clearTimeout(chaseT); busyId++;
+    }
+  };
+}
+
+/* ---------- MIDI ---------- */
+let midi = null, inPort = null, outPort = null, dev = null;   // dev = {channel, version}
+const logLines = [];
+function log(dir, data) {
+  const s = typeof data === 'string' ? data : Array.from(data.slice(0, 20), b => b.toString(16).padStart(2, '0')).join(' ') + (data.length > 20 ? ` … ${data.length} bytes` : '');
+  logLines.push(dir + ' ' + s); if (logLines.length > 150) logLines.shift();
+  const l = $('#midiLog'); if (l && !$('#p-setup').hidden) { l.textContent = logLines.join('\n'); l.scrollTop = l.scrollHeight; }
+}
+function send(bytes) { if (!outPort) throw new Error('No MIDI output selected'); outPort.send(bytes); log('→', bytes); }
+const waiters = [];
+function waitFor(kind, test, timeout) {
+  return new Promise((res, rej) => {
+    const w = { kind, test, res, rej, t: setTimeout(() => { waiters.splice(waiters.indexOf(w), 1); rej(new Error('The volca did not answer (' + kind + ')')); }, timeout) };
+    waiters.push(w);
+  });
+}
+let sx = null;
+function onMidi(e) {
+  const d = e.data;
+  if (d[0] === 0xF0 || sx) {
+    sx = d[0] === 0xF0 ? Array.from(d) : sx.concat(Array.from(d));
+    if (sx[sx.length - 1] !== 0xF7) return;
+    const m = sx; sx = null; log('←', m);
+    const kind = classify(m);
+    const i = waiters.findIndex(w => w.kind === kind && (!w.test || w.test(m)));
+    if (i >= 0) { const w = waiters.splice(i, 1)[0]; clearTimeout(w.t); w.res(m); }
+  }
+}
+let opChain = Promise.resolve();
+function op(fn) { const p = opChain.then(fn, fn); opChain = p.catch(() => {}); return p; }   // one device conversation at a time
+
+async function connect() {
+  if (!navigator.requestMIDIAccess) { toast('This browser has no Web MIDI. Use Chrome or Edge.'); return; }
+  try { midi = midi || await navigator.requestMIDIAccess({ sysex: true }); }
+  catch (e) { toast('MIDI access was blocked. Allow MIDI and SysEx for this page in the browser settings.'); return; }
+  midi.onstatechange = fillPorts; fillPorts();
+  if (!outPort || !inPort) { msg('No volca found', 'Pick its MIDI in and out above'); return; }
+  const b = busy('Looking for the volca');
+  try {
+    const r = await op(async () => { send(searchRequest(42)); return parseSearchReply(await waitFor('search', null, 1500)); });
+    dev = r; $('#connect').textContent = 'Connected';
+    msg('volca sample 2', `Firmware ${r.version} · global channel ${r.channel + 1}`);
+    await b.done('Found it');
+    readSlots();
+  } catch (e) { dev = null; msg('No answer', 'Check the USB cable and that the volca is on'); b.done('No answer from the volca'); }
+}
+let wantIn = '', wantOut = '';
+function fillPorts() {
+  const fill = (sel, ports, want) => {
+    const cur = sel.value; sel.innerHTML = ''; sel.append(el('option', { value: '' }, '—'));
+    ports.forEach(p => sel.append(el('option', { value: p.id }, p.name)));
+    const m = ports.find(p => p.id === cur) || ports.find(p => p.name === want) || ports.find(p => /volca/i.test(p.name));
+    if (m) sel.value = m.id;
+  };
+  fill($('#inSel'), [...midi.inputs.values()], wantIn); fill($('#outSel'), [...midi.outputs.values()], wantOut);
+  bindPorts();
+}
+function bindPorts() {
+  if (inPort) inPort.onmidimessage = null;
+  inPort = midi?.inputs.get($('#inSel').value) || null; outPort = midi?.outputs.get($('#outSel').value) || null;
+  if (inPort) inPort.onmidimessage = onMidi;
+  saveCfg();
+}
+const needDev = () => { if (!dev) { toast('Connect the volca first'); return false; } return true; };
+
+/* device operations (protocol from volsa2) */
+async function expectStatus(timeout) {
+  const st = parseStatus(await waitFor('status', null, timeout));
+  if (!st.ok) { const e = new Error('volca says: ' + st.text); e.code = st.code; throw e; }
+}
+async function readSpace() { send(spaceRequest(dev.channel)); space = parseSpace(await waitFor('space', null, 2000)); showSpace(); return space; }
+async function readHeader(n) { send(headerRequest(dev.channel, n)); return parseHeader(await waitFor('header', m => ((m[7] & 0x7F) | ((m[8] & 1) << 7)) === n, 2500)); }
+async function downloadPcm(n) {
+  const h = slots[n] || await readHeader(n);
+  send(dataRequest(dev.channel, n));
+  return parseData(await waitFor('data', m => ((m[7] & 0x7F) | ((m[8] & 1) << 7)) === n, 20000 + h.length / 5)).pcm;
+}
+async function uploadPcm(n, name, pcm, level = 65535, speed = 16384) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      send(headerMessage(dev.channel, n, { name, length: pcm.length, level, speed })); await expectStatus(4000);
+      send(dataMessage(dev.channel, n, pcm)); await expectStatus(30000 + pcm.length / 3);
+      slots[n] = { slot: n, name: asciiName(name), length: pcm.length, level, speed, empty: false };
+      return;
+    } catch (e) { if (e.code === 0x24 && attempt < 3) { await sleep(500); continue; } throw e; }
+  }
+}
+async function erase(n) { send(emptyHeaderMessage(dev.channel, n)); await expectStatus(4000); slots[n] = { slot: n, name: '', length: 0, level: 0, speed: 0, empty: true }; }
+
+async function readSlots() {
+  if (!needDev()) return;
+  const b = busy('Reading the volca\u2019s slots');
+  try {
+    await op(async () => {
+      await readSpace();
+      for (let n = 0; n < 200; n++) { slots[n] = await readHeader(n); if (n % 8 === 0) { b.sub(`${n + 1} / 200`); led(pad3(n)); renderSlots(); } }
+    });
+    renderSlots(); fillTargets(); if (slots[target] && !slots[target].empty) setTarget(firstEmpty() ?? target);
+    const used = slots.filter(s => s && !s.empty).length;
+    await b.done(`${used} samples found`);
+  } catch (e) { await b.done(e.message); }
+  led(pad3(target));
+}
+const firstEmpty = (from = 0) => { for (let i = 0; i < 200; i++) { const n = (from + i) % 200; if (slots[n] && slots[n].empty) return n; } return null; };
+
+/* ---------- audio ---------- */
+let actx = null;
+const ac = () => (actx = actx || new (window.AudioContext || window.webkitAudioContext)());
+let src = null;               // AudioBuffer being edited
+let sel = { a: 0, b: 1 };     // selection 0..1
+let rendered = null, renderSeq = 0;
+
+function toMono(buf, a, b) {
+  const s = Math.floor(a * buf.length), e = Math.max(s + 1, Math.ceil(b * buf.length)), n = e - s, out = new Float32Array(n);
+  const L = buf.getChannelData(0), R = buf.numberOfChannels > 1 ? buf.getChannelData(1) : L;
+  for (let i = 0; i < n; i++) out[i] = cfg.mono === 'left' ? L[s + i] : cfg.mono === 'right' ? R[s + i] : (L[s + i] + R[s + i]) / 2;
+  return out;
+}
+// Everything the volca needs: mono, 31.25 kHz, 16-bit, with the knob settings applied.
+async function render(buf, a, b, p) {
+  let mono = toMono(buf, a, b); if (p.rev) mono.reverse();
+  const rate = Math.pow(2, p.pitch / 12), outLen = Math.max(1, Math.ceil(mono.length / buf.sampleRate / rate * VS2_RATE));
+  const o = new OfflineAudioContext(1, outLen, VS2_RATE);
+  const ib = o.createBuffer(1, mono.length, buf.sampleRate); ib.copyToChannel(mono, 0);
+  const s = o.createBufferSource(); s.buffer = ib; s.playbackRate.value = rate;
+  const g = o.createGain(); g.gain.value = Math.pow(10, p.gain / 20);
+  s.connect(g); let node = g;
+  if (p.hicut < 15000) { const f = o.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = p.hicut; f.Q.value = 0.707; node.connect(f); node = f; }
+  node.connect(o.destination); s.start();
+  const out = (await o.startRendering()).getChannelData(0).slice();
+  if (p.norm) { let pk = 0; for (const v of out) pk = Math.max(pk, Math.abs(v)); if (pk > 1e-4) { const k = 0.98 / pk; for (let i = 0; i < out.length; i++) out[i] *= k; } }
+  const fi = Math.min(out.length, Math.round(p.fin / 1000 * VS2_RATE)), fo = Math.min(out.length, Math.round(p.fout / 1000 * VS2_RATE));
+  for (let i = 0; i < fi; i++) out[i] *= i / fi;
+  for (let i = 0; i < fo; i++) out[out.length - 1 - i] *= i / fo;
+  const pcm = new Int16Array(out.length);
+  for (let i = 0; i < out.length; i++) pcm[i] = Math.max(-32768, Math.min(32767, Math.round(out[i] * 32767)));
+  return pcm;
+}
+let renderT = 0;
+function rerender() {
+  clearTimeout(renderT);
+  renderT = setTimeout(async () => {
+    if (!src) { rendered = null; showStats(); return; }
+    const id = ++renderSeq, pcm = await render(src, sel.a, sel.b, cfg);
+    if (id === renderSeq) { rendered = pcm; showStats(); }
+  }, 120);
+}
+function showStats() {
+  const s = $('#stats');
+  if (!src) { s.textContent = 'No sample yet'; return; }
+  const srcLen = (sel.b - sel.a) * src.duration;
+  s.innerHTML = '';
+  s.append('Selection ', el('b', {}, srcLen.toFixed(2) + ' s'), ...(rendered ? [' · on the volca ', el('b', {}, fmtS(rendered.length)), ` · ${Math.round(rendered.length * 2 / 1024)} kB`] : [' · preparing…']));
+}
+function pcmToBuffer(pcm, rate = VS2_RATE) { const b = ac().createBuffer(1, pcm.length, rate), d = b.getChannelData(0); for (let i = 0; i < pcm.length; i++) d[i] = pcm[i] / 32768; return b; }
+let player = null, playStart = 0, playLen = 0;
+function play(buf) {
+  stop(); const c = ac(); c.resume();
+  const s = c.createBufferSource(), g = c.createGain(); g.gain.value = cfg.vol; s.buffer = buf; s.connect(g).connect(c.destination);
+  s.onended = () => { if (player === s) { player = null; markKey(10, false); drawWave(); } };
+  s.start(); player = s; playStart = c.currentTime; playLen = buf.duration; markKey(10, true); animPlay();
+}
+function stop() { if (player) { try { player.stop(); } catch (e) {} player = null; markKey(10, false); drawWave(); } }
+async function preview() { if (!src) return toast('Record or open a sample first'); if (!rendered) rendered = await render(src, sel.a, sel.b, cfg); play(pcmToBuffer(rendered)); }
+function animPlay() { if (!player) return; drawWave((ac().currentTime - playStart) / playLen); requestAnimationFrame(animPlay); }
+
+/* waveform */
+let peaks = null, peaksW = 0;
+function drawWave(playPos) {
+  const cv = $('#cv'), w = cv.clientWidth, h = cv.clientHeight, dpr = devicePixelRatio || 1;
+  if (!w || !h) return;
+  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); peaks = null; }
+  const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, w, h);
+  $('#waveEmpty').hidden = !!src; if (!src) return;
+  if (!peaks || peaksW !== w) {
+    peaksW = w; peaks = new Float32Array(w * 2);
+    const L = src.getChannelData(0), R = src.numberOfChannels > 1 ? src.getChannelData(1) : L, per = src.length / w;
+    for (let x = 0; x < w; x++) { let mn = 1, mx = -1; const a = Math.floor(x * per), b = Math.min(src.length, Math.floor((x + 1) * per) + 1); for (let i = a; i < b; i += Math.max(1, Math.floor((b - a) / 64))) { const v = (L[i] + R[i]) / 2; if (v < mn) mn = v; if (v > mx) mx = v; } peaks[2 * x] = mn; peaks[2 * x + 1] = mx; }
+  }
+  const ax = sel.a * w, bx = sel.b * w, mid = h / 2;
+  for (let x = 0; x < w; x++) {
+    const inSel = x >= ax && x <= bx;
+    c.fillStyle = inSel ? '#ff5a3c' : 'rgba(255,90,60,.28)';
+    const y1 = mid - peaks[2 * x + 1] * mid * 0.92, y2 = mid - peaks[2 * x] * mid * 0.92;
+    c.fillRect(x, y1, 1, Math.max(1, y2 - y1));
+  }
+  c.fillStyle = 'rgba(0,0,0,.45)'; c.fillRect(0, 0, ax, h); c.fillRect(bx, 0, w - bx, h);
+  c.fillStyle = '#ff3b1f'; c.fillRect(ax - 1, 0, 2, h); c.fillRect(bx - 1, 0, 2, h);
+  c.fillRect(ax - 5, 0, 10, 6); c.fillRect(bx - 5, h - 6, 10, 6);
+  if (playPos != null && playPos >= 0 && playPos <= 1) { c.fillStyle = '#fff'; c.fillRect(ax + (bx - ax) * playPos, 0, 1, h); }
+}
+function bindWave() {
+  const wv = $('#wave'); let drag = null;
+  const pos = e => { const r = wv.getBoundingClientRect(); return Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)); };
+  wv.addEventListener('pointerdown', e => {
+    if (!src) return; wv.setPointerCapture(e.pointerId);
+    const p = pos(e), w = wv.getBoundingClientRect().width, near = d => Math.abs(d) * w < 9;
+    drag = near(p - sel.a) ? 'a' : near(p - sel.b) ? 'b' : { from: p };
+  });
+  wv.addEventListener('pointermove', e => {
+    if (!drag) return; const p = pos(e);
+    if (drag === 'a') sel.a = Math.min(p, sel.b - 0.001); else if (drag === 'b') sel.b = Math.max(p, sel.a + 0.001);
+    else if (Math.abs(p - drag.from) > 0.002) { sel.a = Math.min(p, drag.from); sel.b = Math.max(p, drag.from); }
+    drawWave(); syncSelKnobs();
+  });
+  const up = () => { if (drag) { drag = null; rerender(); } };
+  wv.addEventListener('pointerup', up); wv.addEventListener('pointercancel', up);
+  new ResizeObserver(() => drawWave()).observe(wv);
+  // drop audio on the waveform
+  wv.addEventListener('dragover', e => { e.preventDefault(); wv.classList.add('drag'); });
+  wv.addEventListener('dragleave', () => wv.classList.remove('drag'));
+  wv.addEventListener('drop', e => { e.preventDefault(); wv.classList.remove('drag'); const f = e.dataTransfer.files[0]; if (f) openFile(f); });
+}
+function setSource(buf, name) {
+  stop(); src = buf; sel = { a: 0, b: 1 }; peaks = null; rendered = null;
+  if (name != null) $('#sName').value = asciiName(name);
+  drawWave(); syncSelKnobs(); rerender();
+}
+async function decodeFile(f) { const ab = await f.arrayBuffer(); return await ac().decodeAudioData(ab); }
+async function openFile(f) {
+  const b = busy('Opening ' + f.name);
+  try { setSource(await decodeFile(f), f.name.replace(/\.[^.]+$/, '')); selectTab('sample'); await b.done('Ready'); }
+  catch (e) { await b.done('Could not read that audio file'); }
+}
+function autoTrim() {
+  if (!src) return;
+  const m = toMono(src, 0, 1), th = 0.02, a0 = Math.floor(sel.a * m.length), b0 = Math.ceil(sel.b * m.length);
+  let a = a0, b = b0 - 1;
+  while (a < b && Math.abs(m[a]) < th) a++;
+  while (b > a && Math.abs(m[b]) < th) b--;
+  if (b - a < 32) return toast('Nothing louder than silence in the selection');
+  sel.a = Math.max(0, (a - 0.002 * src.sampleRate) / m.length); sel.b = Math.min(1, (b + 0.01 * src.sampleRate) / m.length);
+  drawWave(); syncSelKnobs(); rerender();
+}
+
+/* recording */
+let rec = null;
+async function listInputs() {
+  try {
+    const ds = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'audioinput');
+    const s = $('#inDev'), cur = s.value; s.innerHTML = ''; s.append(el('option', { value: '' }, 'Default input'));
+    ds.forEach(d => s.append(el('option', { value: d.deviceId }, d.label || 'Input ' + (s.length))));
+    s.value = cur;
+  } catch (e) {}
+}
+async function toggleRec() {
+  if (rec) return stopRec();
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: $('#inDev').value || undefined, echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 2 } }); }
+  catch (e) { return toast('Microphone access was blocked'); }
+  listInputs();
+  const c = ac(); await c.resume();
+  const s = c.createMediaStreamSource(stream), proc = c.createScriptProcessor(4096, 2, 2), an = c.createAnalyser(); an.fftSize = 1024;
+  const chunks = [[], []]; let frames = 0;
+  proc.onaudioprocess = e => {
+    for (let ch = 0; ch < 2; ch++) chunks[ch].push(new Float32Array(e.inputBuffer.getChannelData(Math.min(ch, e.inputBuffer.numberOfChannels - 1))));
+    frames += e.inputBuffer.length;
+    led('r' + Math.floor(frames / c.sampleRate).toString().padStart(3, ' '));
+    if (frames / c.sampleRate >= 60) stopRec();
+  };
+  const mute = c.createGain(); mute.gain.value = 0;
+  s.connect(an); s.connect(proc); proc.connect(mute).connect(c.destination);
+  rec = { stream, s, proc, an, chunks, rate: c.sampleRate, get frames() { return frames; } };
+  $('#recBtn').textContent = '■ Stop'; $('#fRec').setAttribute('aria-pressed', 'true'); markKey(12, true);
+  msg('Recording', 'Press Rec again to stop · max 60 s');
+  const buf = new Float32Array(an.fftSize);
+  (function meter() { if (!rec) { $('#meter').style.width = '0'; return; } an.getFloatTimeDomainData(buf); let pk = 0; for (const v of buf) pk = Math.max(pk, Math.abs(v)); $('#meter').style.width = Math.min(100, pk * 100) + '%'; requestAnimationFrame(meter); })();
+}
+function stopRec() {
+  if (!rec) return;
+  const r = rec; rec = null;
+  r.proc.disconnect(); r.s.disconnect(); r.stream.getTracks().forEach(t => t.stop());
+  const n = r.chunks[0].reduce((a, c) => a + c.length, 0);
+  $('#recBtn').textContent = '● Record'; $('#fRec').setAttribute('aria-pressed', 'false'); markKey(12, false); led(pad3(target));
+  if (n < 1000) { msg('Recording too short'); return; }
+  const b = ac().createBuffer(2, n, r.rate);
+  for (let ch = 0; ch < 2; ch++) { const d = b.getChannelData(ch); let o = 0; for (const c of r.chunks[ch]) { d.set(c, o); o += c.length; } }
+  setSource(b, 'rec ' + new Date().toTimeString().slice(0, 8).replace(/:/g, ''));
+  autoTrim(); msg('Recorded', `${(n / r.rate).toFixed(1)} s · trim it, then Send`);
+}
+
+/* WAV */
+function wavFile(pcm, rate = VS2_RATE) {
+  const b = new ArrayBuffer(44 + pcm.length * 2), v = new DataView(b), w = (o, s) => [...s].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+  w(0, 'RIFF'); v.setUint32(4, 36 + pcm.length * 2, true); w(8, 'WAVE'); w(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, pcm.length * 2, true);
+  for (let i = 0; i < pcm.length; i++) v.setInt16(44 + i * 2, pcm[i], true);
+  return new Blob([b], { type: 'audio/wav' });
+}
+function readWav16(ab) {   // our own 31.25 kHz mono 16-bit files (backups); returns null otherwise
+  const v = new DataView(ab); if (v.getUint32(0, false) !== 0x52494646) return null;
+  let o = 12, fmt = null;
+  while (o + 8 <= v.byteLength) {
+    const id = String.fromCharCode(v.getUint8(o), v.getUint8(o + 1), v.getUint8(o + 2), v.getUint8(o + 3)), sz = v.getUint32(o + 4, true);
+    if (id === 'fmt ') fmt = { ch: v.getUint16(o + 10, true), rate: v.getUint32(o + 12, true), bits: v.getUint16(o + 22, true) };
+    if (id === 'data' && fmt && fmt.ch === 1 && fmt.bits === 16 && fmt.rate === VS2_RATE) { const pcm = new Int16Array(sz / 2); for (let i = 0; i < pcm.length; i++) pcm[i] = v.getInt16(o + 8 + i * 2, true); return pcm; }
+    o += 8 + sz + (sz & 1);
+  }
+  return null;
+}
+function download(blob, name) { const a = el('a', { href: URL.createObjectURL(blob), download: name }); document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500); }
+const safe = s => (s || 'sample').trim().replace(/[^\w\- ]+/g, '').replace(/\s+/g, '-') || 'sample';
+
+/* ---------- send ---------- */
+async function sendEditor() {
+  if (!src) return toast('Record or open a sample first');
+  if (!needDev()) return;
+  const name = $('#sName').value.trim() || 'sample', occupied = slots[target] && !slots[target].empty;
+  if (occupied && !confirm(`Slot ${pad3(target)} holds “${slots[target].name}”. Replace it?`)) return;
+  const b = busy(`Sending “${asciiName(name)}” to slot ${pad3(target)}`, { sub: 'Preparing the sample' });
+  try {
+    const pcm = rendered || await render(src, sel.a, sel.b, cfg);
+    b.sub(`${fmtS(pcm.length)} · ${Math.round(pcm.length * 2 / 1024)} kB over USB`); led('SEnd');
+    await op(async () => { await uploadPcm(target, name, pcm); await readSpace(); });
+    renderSlots(); fillTargets();
+    await b.done(`Stored in slot ${pad3(target)}`);
+    msg('Sent', `“${asciiName(name)}” is in slot ${pad3(target)}`);
+    const nx = firstEmpty(target + 1); if (nx != null) setTarget(nx);
+  } catch (e) { await b.done(e.message); }
+  led(pad3(target));
+}
+
+/* ---------- library ---------- */
+function showSpace() {
+  if (!space) return;
+  $('#memBar').style.width = Math.round(space.ratio * 100) + '%';
+  $('#memTxt').textContent = `${Math.round(space.ratio * 100)}% used`;
+}
+function renderSlots() {
+  const host = $('#slots'); host.innerHTML = '';
+  for (let n = 0; n < 200; n++) {
+    const s = slots[n];
+    const b = el('button', { class: 'slot' + (!s || s.empty ? ' empty' : '') + (n === selSlot ? ' sel' : '') + (n === target ? ' target' : ''), type: 'button', title: n === target ? 'Next sample goes here' : '' },
+      el('span', { class: 'no' }, pad3(n)), el('span', { class: 'nm' }, s ? (s.empty ? 'empty' : s.name || 'untitled') : '…'), s && !s.empty ? el('span', { class: 'ln' }, (s.length / VS2_RATE).toFixed(1) + 's') : null);
+    b.onclick = () => { selSlot = n; renderSlots(); showSel(); };
+    b.ondblclick = () => editSlot(n);
+    host.append(b);
+  }
+  showSel();
+}
+function showSel() {
+  const s = slots[selSlot], has = s && !s.empty;
+  $('#selInfo').textContent = selSlot < 0 ? 'Select a slot' : `Slot ${pad3(selSlot)} · ${has ? s.name + ' · ' + fmtS(s.length) : 'empty'}`;
+  ['#aPlay', '#aEdit', '#aWav', '#aDel'].forEach(k => $(k).disabled = !has);
+  $('#aTarget').disabled = selSlot < 0;
+}
+function fillTargets() {
+  const s = $('#slotSel'); s.innerHTML = '';
+  for (let n = 0; n < 200; n++) { const h = slots[n]; s.append(el('option', { value: n }, h ? `${pad3(n)} · ${h.empty ? 'empty' : h.name}` : pad3(n))); }
+  s.value = target;
+}
+function setTarget(n) { target = (n + 200) % 200; $('#slotSel').value = target; led(pad3(target)); renderSlots(); }
+async function fetchSlot(n, title) {
+  const b = busy(title, { sub: `${slots[n].name} · ${fmtS(slots[n].length)}` });
+  try { const pcm = await op(() => downloadPcm(n)); await b.done(); return pcm; }
+  catch (e) { await b.done(e.message); return null; }
+}
+async function listenSlot(n) { const pcm = await fetchSlot(n, `Reading slot ${pad3(n)}`); if (pcm) play(pcmToBuffer(pcm)); }
+async function editSlot(n) {
+  if (!slots[n] || slots[n].empty) return;
+  const pcm = await fetchSlot(n, `Loading slot ${pad3(n)} into the editor`);
+  if (pcm) { setSource(pcmToBuffer(pcm), slots[n].name); setTarget(n); selectTab('sample'); }
+}
+async function wavSlot(n) { const pcm = await fetchSlot(n, `Saving slot ${pad3(n)}`); if (pcm) download(wavFile(pcm), `${pad3(n)} ${safe(slots[n].name)}.wav`); }
+async function deleteSlot(n) {
+  if (!slots[n] || slots[n].empty) return;
+  if (!confirm(`Delete “${slots[n].name}” from slot ${pad3(n)}? This can't be undone, save it first if you need it.`)) return;
+  const b = busy(`Deleting slot ${pad3(n)}`);
+  try { await op(async () => { await erase(n); await readSpace(); }); renderSlots(); fillTargets(); await b.done('Deleted'); }
+  catch (e) { await b.done(e.message); }
+}
+
+/* ---------- backup / restore / bulk ---------- */
+function bkLog(t) { const l = $('#bkLog'); l.textContent += t + '\n'; l.scrollTop = l.scrollHeight; }
+async function backupAll() {
+  if (!needDev()) return;
+  if (!slots.every(Boolean)) await readSlots();
+  const used = slots.filter(s => s && !s.empty); if (!used.length) return toast('The volca has no samples');
+  let cancelled = false;
+  const b = busy('Backing up the volca', { cancel: () => { cancelled = true; } });
+  const zip = window.JSZip ? new JSZip() : null, manifest = [];
+  try {
+    for (const [i, h] of used.entries()) {
+      if (cancelled) break;
+      b.sub(`${i + 1} / ${used.length} · ${pad3(h.slot)} ${h.name}`); led(pad3(h.slot));
+      const pcm = await op(() => downloadPcm(h.slot)), file = `${pad3(h.slot)} ${safe(h.name)}.wav`, wav = wavFile(pcm);
+      manifest.push({ slot: h.slot, name: h.name, length: h.length, level: h.level, speed: h.speed, file });
+      if (zip) zip.file(file, wav); else download(wav, file);
+      bkLog(`saved ${pad3(h.slot)} ${h.name}`);
+    }
+    if (zip) {
+      zip.file('manifest.json', JSON.stringify({ app: 'sample loader', device: 'volca sample 2', date: new Date().toISOString(), samples: manifest }, null, 1));
+      download(await zip.generateAsync({ type: 'blob' }), `volca-sample-backup-${new Date().toISOString().slice(0, 10)}.zip`);
+    }
+    await b.done(cancelled ? `Stopped · ${manifest.length} saved` : `${manifest.length} samples backed up`);
+  } catch (e) { bkLog('error: ' + e.message); await b.done(e.message); }
+  led(pad3(target));
+}
+async function restore(file) {
+  if (!needDev()) return;
+  if (!window.JSZip) return toast('The zip library did not load; check the internet connection');
+  let zip, man;
+  try { zip = await JSZip.loadAsync(file); man = JSON.parse(await zip.file('manifest.json').async('string')).samples; }
+  catch (e) { return toast('That is not a backup made by this tool'); }
+  if (!confirm(`Restore ${man.length} samples into their original slots? Samples already in those slots are replaced.`)) return;
+  let cancelled = false;
+  const b = busy('Restoring backup', { cancel: () => { cancelled = true; } });
+  try {
+    if (!slots.every(Boolean)) await op(async () => { for (let n = 0; n < 200; n++) slots[n] = await readHeader(n); });
+    if ($('#rsClean').checked) {
+      const keep = new Set(man.map(m => m.slot));
+      for (let n = 0; n < 200; n++) if (!cancelled && slots[n] && !slots[n].empty && !keep.has(n)) { b.sub(`Freeing slot ${pad3(n)}`); await op(() => erase(n)); bkLog(`erased ${pad3(n)}`); }
+    }
+    for (const [i, m] of man.entries()) {
+      if (cancelled) break;
+      b.sub(`${i + 1} / ${man.length} · ${pad3(m.slot)} ${m.name}`); led(pad3(m.slot));
+      const ab = await zip.file(m.file).async('arraybuffer');
+      let pcm = readWav16(ab);
+      if (!pcm) pcm = await render(await ac().decodeAudioData(ab), 0, 1, { mono: 'mid', rev: false, pitch: 0, gain: 0, hicut: 15625, norm: false, fin: 0, fout: 0 });
+      await op(() => uploadPcm(m.slot, m.name, pcm, m.level || 65535, m.speed || 16384)); bkLog(`restored ${pad3(m.slot)} ${m.name}`);
+    }
+    await op(readSpace); renderSlots(); fillTargets();
+    await b.done(cancelled ? 'Stopped' : 'Backup restored');
+  } catch (e) { bkLog('error: ' + e.message); await b.done(e.message); }
+  led(pad3(target));
+}
+async function bulk(files) {
+  if (!needDev()) return;
+  files = [...files].filter(f => /^audio\/|\.(wav|aif|aiff|mp3|ogg|flac|m4a)$/i.test(f.type || f.name));
+  if (!files.length) return;
+  if (!slots.every(Boolean)) await readSlots();
+  let cancelled = false, n = 0, slot = firstEmpty(target);
+  const b = busy(`Loading ${files.length} files`, { cancel: () => { cancelled = true; } });
+  try {
+    for (const f of files) {
+      if (cancelled) break;
+      if (slot == null) { bkLog('no empty slots left'); break; }
+      b.sub(`${n + 1} / ${files.length} · ${f.name} → ${pad3(slot)}`); led(pad3(slot));
+      const name = f.name.replace(/\.[^.]+$/, '');
+      const pcm = await render(await decodeFile(f), 0, 1, { mono: cfg.mono, rev: false, pitch: 0, gain: 0, hicut: 15625, norm: cfg.norm, fin: 0, fout: 5 });
+      try { await op(() => uploadPcm(slot, name, pcm)); bkLog(`${pad3(slot)} ← ${f.name} (${fmtS(pcm.length)})`); n++; }
+      catch (e) { bkLog(`${f.name}: ${e.message}`); if (e.code === 0x25) break; }
+      slot = firstEmpty(slot + 1);
+    }
+    await op(readSpace); renderSlots(); fillTargets();
+    await b.done(`${n} samples sent`);
+  } catch (e) { bkLog('error: ' + e.message); await b.done(e.message); }
+  led(pad3(target));
+}
+
+/* ---------- knobs ---------- */
+function knob(host, { label, min, max, value, step = 1, fmt = v => v, onChange, black = false, reset }) {
+  const dial = el('div', { class: 'dial', 'data-rot': '', role: 'slider', tabindex: 0, 'aria-label': label, 'aria-valuemin': min, 'aria-valuemax': max });
+  const val = el('span', { class: 'val' }), k = el('div', { class: 'knob' + (black ? ' black' : ''), title: 'Drag up/down · double-click to reset' }, el('span', { class: 'cap' }, label), dial, val);
+  let v = value;
+  const show = () => { const t = (v - min) / (max - min); dial.style.setProperty('--rot', (-135 + t * 270) + 'deg'); dial.setAttribute('aria-valuenow', v); dial.setAttribute('aria-valuetext', fmt(v)); val.textContent = fmt(v); };
+  const set = (nv, fire = true) => { nv = Math.round(Math.max(min, Math.min(max, nv)) / step) * step; nv = +nv.toFixed(4); if (nv === v) return; v = nv; show(); if (fire) onChange(v); };
+  let y0 = 0, v0 = 0;
+  dial.addEventListener('pointerdown', e => { dial.setPointerCapture(e.pointerId); y0 = e.clientY; v0 = v; });
+  dial.addEventListener('pointermove', e => { if (!dial.hasPointerCapture(e.pointerId)) return; set(v0 + (y0 - e.clientY) / (e.shiftKey ? 600 : 150) * (max - min)); });
+  dial.addEventListener('wheel', e => { e.preventDefault(); set(v - Math.sign(e.deltaY) * step * (e.shiftKey ? 1 : Math.max(1, Math.round((max - min) / step / 50)))); }, { passive: false });
+  dial.addEventListener('dblclick', () => set(reset ?? value));
+  dial.addEventListener('keydown', e => { const d = { ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1 }[e.key]; if (d) { e.preventDefault(); set(v + d * step * (e.shiftKey ? 10 : 1)); } });
+  show(); host.append(k);
+  return { set: (nv) => set(nv, false), get: () => v };
+}
+let kStart, kLen;
+function syncSelKnobs() { kStart?.set(Math.round(sel.a * 1000) / 10); kLen?.set(Math.round((sel.b - sel.a) * 1000) / 10); }
+function buildKnobs() {
+  const h = $('#knobs'), ch = (key, f) => v => { cfg[key] = v; saveCfg(); rerender(); };
+  knob(h, { label: 'Gain', min: -24, max: 24, value: cfg.gain, reset: 0, fmt: v => (v > 0 ? '+' : '') + v + ' dB', onChange: ch('gain') });
+  knob(h, { label: 'Pitch', min: -24, max: 24, value: cfg.pitch, reset: 0, fmt: v => (v > 0 ? '+' : '') + v + ' st', onChange: ch('pitch') });
+  knob(h, { label: 'Hi cut', min: 500, max: 15625, step: 125, value: cfg.hicut, reset: 15625, fmt: v => v >= 15000 ? 'off' : (v / 1000).toFixed(1) + 'k', onChange: ch('hicut') });
+  knob(h, { label: 'Fade in', min: 0, max: 500, step: 5, value: cfg.fin, reset: 0, fmt: v => v + ' ms', onChange: ch('fin') });
+  knob(h, { label: 'Fade out', min: 0, max: 2000, step: 10, value: cfg.fout, reset: 10, fmt: v => v + ' ms', onChange: ch('fout') });
+  const f = $('#fknobs');
+  kStart = knob(f, { label: 'Start point', min: 0, max: 99.9, step: 0.1, value: 0, reset: 0, fmt: v => v.toFixed(1) + '%', onChange: v => { const len = sel.b - sel.a; sel.a = v / 100; sel.b = Math.min(1, sel.a + len); drawWave(); rerender(); } });
+  kLen = knob(f, { label: 'Length', min: 0.1, max: 100, step: 0.1, value: 100, reset: 100, fmt: v => v.toFixed(1) + '%', onChange: v => { sel.b = Math.min(1, sel.a + v / 100); drawWave(); rerender(); } });
+  knob(f, { label: 'Volume', min: 0, max: 100, value: Math.round(cfg.vol * 100), reset: 80, black: true, fmt: v => v + '%', onChange: v => { cfg.vol = v / 100; saveCfg(); } });
+}
+
+/* ---------- pad strip ---------- */
+const keyDefs = [...Array.from({ length: 10 }, (_, i) => ({ cap: 'Part ' + (i + 1), lab: String(i + 1), part: i })),
+  { cap: 'Preview', lab: '▶', act: preview }, { cap: 'Stop', lab: '■', act: stop }, { cap: 'Rec', lab: '●', act: toggleRec },
+  { cap: 'Slot', lab: '◀', act: () => setTarget(target - 1) }, { cap: 'Slot', lab: '▶', act: () => setTarget(target + 1) }, { cap: 'Send', lab: 'Send', act: sendEditor }];
+function markKey(i, on) { const k = document.querySelectorAll('.pk')[i]; if (k) k.classList.toggle('on', on); }
+function buildKeys() {
+  const host = $('#keys');
+  keyDefs.forEach((d, i) => {
+    const k = el('button', { class: 'pk', type: 'button', 'aria-label': d.part != null ? `Play part ${d.part + 1} on the volca` : d.cap + ' ' + d.lab }, el('span', { class: 'l' }), el('span', { class: 'k' }, d.lab), el('span', { class: 'cap' }, d.cap));
+    if (d.part != null) {
+      const chn = () => (cfg.partCh + d.part) & 15;
+      const on = e => { e.preventDefault(); k.setPointerCapture?.(e.pointerId); k.classList.add('down'); try { outPort?.send([0x90 | chn(), 60, 100]); } catch (x) {} if (!outPort) toast('Connect the volca to play its parts'); };
+      const off = () => { if (!k.classList.contains('down')) return; k.classList.remove('down'); try { outPort?.send([0x80 | chn(), 60, 0]); } catch (x) {} };
+      k.addEventListener('pointerdown', on); k.addEventListener('pointerup', off); k.addEventListener('pointercancel', off);
+    } else {
+      k.addEventListener('pointerdown', () => k.classList.add('down'));
+      ['pointerup', 'pointerleave', 'pointercancel'].forEach(t => k.addEventListener(t, () => k.classList.remove('down')));
+      k.addEventListener('click', () => d.act());
+    }
+    host.append(k);
+  });
+}
+
+/* ---------- tabs + fit ---------- */
+function selectTab(name) {
+  document.querySelectorAll('.fgrid [role=tab]').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === name));
+  document.querySelectorAll('.panel').forEach(p => p.hidden = p.id !== 'p-' + name);
+  if (name === 'setup') { const l = $('#midiLog'); l.textContent = logLines.join('\n'); }
+  if (name === 'sample') requestAnimationFrame(() => drawWave());
+}
+function fitScreen() {
+  const z = $('#zoom'), d = $('#device');
+  if (innerWidth <= 900) { z.style.zoom = ''; z.style.height = ''; return; }
+  z.style.zoom = 1; const H = d.clientHeight; z.style.height = H + 'px';
+  const need = $('.top').offsetHeight + $('.strip').offsetHeight + 14 + Math.max($('.func').scrollHeight, 430) + 34;
+  const k = Math.max(0.7, Math.min(1, H / need));
+  z.style.zoom = k; z.style.height = (H / k) + 'px'; drawWave();
+}
+
+/* ---------- wire up ---------- */
+function init() {
+  const saved = loadCfg(); wantIn = saved?.inName || ''; wantOut = saved?.outName || '';
+  buildKnobs(); buildKeys(); bindWave();
+  for (let i = 0; i < 16; i++) $('#chase').append(el('i'));
+  for (let i = 0; i < 16; i++) $('#partCh').append(el('option', { value: i }, i + 1));
+  $('#partCh').value = cfg.partCh; $('#partCh').onchange = e => { cfg.partCh = +e.target.value; saveCfg(); };
+  const tog = (id, key) => { const b = $(id); const show = () => b.setAttribute('aria-pressed', cfg[key]); show(); b.onclick = () => { cfg[key] = !cfg[key]; show(); saveCfg(); rerender(); }; };
+  tog('#tNorm', 'norm'); tog('#tRev', 'rev');
+  $('#monoSel').value = cfg.mono; $('#monoSel').onchange = e => { cfg.mono = e.target.value; saveCfg(); rerender(); };
+  try { localStorage.removeItem('volca-loader-theme'); } catch (e) {}
+  $('#connect').onclick = connect; $('#inSel').onchange = bindPorts; $('#outSel').onchange = bindPorts;
+  $('#recBtn').onclick = toggleRec; $('#fRec').onclick = toggleRec;
+  $('#openBtn').onclick = () => $('#file').click(); $('#file').onchange = e => { const f = e.target.files[0]; if (f) openFile(f); e.target.value = ''; };
+  $('#trimBtn').onclick = autoTrim;
+  $('#fPlay').onclick = preview; $('#fStop').onclick = stop; $('#sendBtn').onclick = sendEditor; $('#fSend').onclick = sendEditor;
+  $('#saveWav').onclick = async () => { if (!src) return toast('Record or open a sample first'); const name = $('#sName').value || 'sample', b = busy('Saving ' + safe(name) + '.wav'); download(wavFile(rendered || await render(src, sel.a, sel.b, cfg)), safe(name) + '.wav'); await b.done('Saved'); };
+  $('#slotSel').onchange = e => setTarget(+e.target.value);
+  $('#readBtn').onclick = readSlots;
+  $('#aPlay').onclick = () => listenSlot(selSlot); $('#aEdit').onclick = () => editSlot(selSlot); $('#aWav').onclick = () => wavSlot(selSlot); $('#aDel').onclick = () => deleteSlot(selSlot);
+  $('#aTarget').onclick = () => { setTarget(selSlot); toast(`The next sample you send goes to slot ${pad3(selSlot)}`); };
+  $('#bkAll').onclick = backupAll; $('#rsBtn').onclick = () => $('#rsFile').click(); $('#rsFile').onchange = e => { const f = e.target.files[0]; if (f) restore(f); e.target.value = ''; };
+  const drop = $('#bulkDrop');
+  $('#bulkBtn').onclick = () => $('#bulkFile').click(); $('#bulkFile').onchange = e => { bulk(e.target.files); e.target.value = ''; };
+  drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); }); drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+  drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('over'); bulk(e.dataTransfer.files); });
+  document.querySelectorAll('.fgrid [role=tab]').forEach(b => b.onclick = () => selectTab(b.dataset.tab));
+  window.addEventListener('keydown', e => {
+    if (/INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName) || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === ' ') { e.preventDefault(); player ? stop() : preview(); }
+    else if (e.key.toLowerCase() === 'r') toggleRec();
+  });
+  fillTargets(); renderSlots(); showStats(); led(' ---');
+  fitScreen(); addEventListener('resize', () => requestAnimationFrame(fitScreen)); document.fonts?.ready.then(fitScreen);
+  listInputs();
+  if (navigator.requestMIDIAccess && navigator.permissions) navigator.permissions.query({ name: 'midi', sysex: true }).then(s => { if (s.state === 'granted') connect(); }).catch(() => {});
+}
+init();
+
+</script>
+</body>
+</html>
